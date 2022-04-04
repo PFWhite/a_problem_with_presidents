@@ -2,6 +2,10 @@ from datetime import datetime
 import re
 
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+# normally when doing EDA I start with the pandas-profiling package since it is a great base to start from
+from pandas_profiling import ProfileReport
 
 filename = "U.S. Presidents Birth and Death Information - Sheet1.csv"
 
@@ -58,9 +62,12 @@ data = data.drop(
 )
 
 data = data.sort_values(by="lived_days", ascending=True)
+profile = ProfileReport(data)
+with open('pandas_profiling_report.html', 'w') as outfile:
+    outfile.write(profile.to_html())
 
 bottom10 = data.head(n=10)
-top10 = data.tail(n=10)
+top10 = data.tail(n=10).sort_values(by="lived_days", ascending=False)
 
 bottom10.to_csv(
     f'shortest_lived_presidents_as_of_{datetime.now().strftime("%Y-%m-%d")}.csv',
@@ -95,6 +102,13 @@ lived_measures.to_csv(
 
 report_filename = f'report_generated_{datetime.now().strftime("%Y-%m-%d")}.md'
 
+sns.set_theme(style="whitegrid")
+sns.violinplot(x=data[ 'lived_days' ])
+plt.savefig('./lived_days_plot.png')
+plt.clf()
+sns.scatterplot(x=data[ 'year_of_birth' ], y=data['lived_days'])
+plt.savefig('./birth_lived_days_scatter.png')
+
 with open(report_filename, "w") as outfile:
     report = f"""# President Age report
 
@@ -103,7 +117,18 @@ with open(report_filename, "w") as outfile:
 
     ## Overview
 
-    Our presidents are too old.
+    Our presidents are getting older. However this cannot be ascribed to just advancing medical science since
+    the lived days year of birth correlation is quadratic. JFK is an obvious outlier and should probably be
+    removed along with McKinley.
+
+    Further analysis should include the years over which the president served. Anecdotally we see that presidents
+    visibly age over the course of their service. The author wonders what the data would show.
+
+    ### Plots
+
+    ![Lived Days](lived_days_plot.png)
+
+    ![Birth Year and Lived Days](birth_lived_days_scatter.png)
 
     ## Methodology
 
@@ -127,6 +152,8 @@ with open(report_filename, "w") as outfile:
     time of running the report every `lived_days` value was unique so no mode could be calculated.
 
     ## Appendix
+
+    CSV versions of the following file can be found in the same directory as this report.
 
     ### Enhanced Data
 
